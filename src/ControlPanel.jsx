@@ -204,31 +204,80 @@ function Slicer({ spriteSheet, anim, onChange, onCommit }) {
   const stageRef = useRef(null);
   const [dims, setDims] = useState({ w: 0, h: 0 });
   const draw = useRef(null);
+  const imgRef = useRef(null);
 
-  const toImg = (e) => {
+  const toImg = (e, isDown = false) => {
     const r = stageRef.current.getBoundingClientRect();
-    return {
-      x: Math.round(((e.clientX - r.left) / r.width) * dims.w),
-      y: Math.round(((e.clientY - r.top) / r.height) * dims.h),
-    };
+    const img = imgRef.current;
+    
+    if (isDown) {
+      console.log("--------------------------------------------------");
+      console.log("Mouse");
+      console.log(`clientX: ${e.clientX}`);
+      console.log(`clientY: ${e.clientY}`);
+      console.log(`pageX: ${e.pageX}`);
+      console.log(`pageY: ${e.pageY}`);
+      console.log(`screenX: ${e.screenX}`);
+      console.log(`screenY: ${e.screenY}`);
+      console.log(`offsetX: ${e.nativeEvent.offsetX}`);
+      console.log(`offsetY: ${e.nativeEvent.offsetY}`);
+      
+      console.log("--------------------------------------------------");
+      console.log("Image");
+      console.log(`naturalWidth: ${img?.naturalWidth}`);
+      console.log(`naturalHeight: ${img?.naturalHeight}`);
+      console.log(`width: ${img?.width}`);
+      console.log(`height: ${img?.height}`);
+      console.log(`clientWidth: ${img?.clientWidth}`);
+      console.log(`clientHeight: ${img?.clientHeight}`);
+      console.log(`offsetWidth: ${img?.offsetWidth}`);
+      console.log(`offsetHeight: ${img?.offsetHeight}`);
+      console.log(`scrollWidth: ${img?.scrollWidth}`);
+      console.log(`scrollHeight: ${img?.scrollHeight}`);
+      console.log(`stage getBoundingClientRect:`, r);
+      console.log(`devicePixelRatio: ${window.devicePixelRatio}`);
+    }
+
+    const x = Math.round(((e.clientX - r.left) / r.width) * dims.w);
+    const y = Math.round(((e.clientY - r.top) / r.height) * dims.h);
+    
+    if (isDown) {
+      console.log(`convertedX: ${x}, convertedY: ${y}`);
+    }
+    return { x, y, rawX: e.clientX, rawY: e.clientY };
   };
 
   const onDown = (e) => {
     if (!dims.w) return;
     e.currentTarget.setPointerCapture(e.pointerId);
-    draw.current = toImg(e);
+    console.log("--------------------------------------------------");
+    console.log("Selection dragStart");
+    draw.current = toImg(e, true);
   };
   const onMove = (e) => {
     if (!draw.current) return;
-    const p = toImg(e);
+    const p = toImg(e, false);
     const x = Math.min(draw.current.x, p.x);
     const y = Math.min(draw.current.y, p.y);
     const w = Math.abs(p.x - draw.current.x);
     const h = Math.abs(p.y - draw.current.y);
-    if (w > 3 && h > 3) onChange({ x, y, w, h });
+    if (w > 3 && h > 3) {
+      onChange({ x, y, w, h });
+    }
   };
-  const onUp = () => {
+  const onUp = (e) => {
     if (draw.current) {
+      const p = toImg(e, false);
+      const w = Math.abs(p.x - draw.current.x);
+      const h = Math.abs(p.y - draw.current.y);
+      console.log("--------------------------------------------------");
+      console.log("Selection dragEnd");
+      console.log(`rawWidth: ${Math.abs(p.rawX - draw.current.rawX)}`);
+      console.log(`rawHeight: ${Math.abs(p.rawY - draw.current.rawY)}`);
+      console.log(`convertedWidth: ${w}`);
+      console.log(`convertedHeight: ${h}`);
+      console.log(`savedX: ${anim.x}, savedY: ${anim.y}, savedW: ${anim.w}, savedH: ${anim.h}`);
+      
       draw.current = null;
       onCommit();
     }
@@ -243,6 +292,7 @@ function Slicer({ spriteSheet, anim, onChange, onCommit }) {
       onPointerUp={onUp}
     >
       <img
+        ref={imgRef}
         src={spriteSheet}
         alt="sheet"
         draggable={false}
